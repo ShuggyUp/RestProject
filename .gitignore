@@ -1,2 +1,4 @@
 .idea
 .env
+code_files/test_something.py
+*/__pycache__

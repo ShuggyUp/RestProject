@@ -1,16 +1,17 @@
 import requests
 import json
-from database_manager import DatabaseManager
+from code_files.database_manager import VacanciesDatabaseManager
 from datetime import datetime
 
 
-class VacanciesManager:
+class VacanciesHandlerAPI:
+    """Обработчик взаимодействий с API"""
 
-    __request_headers = {
+    __request_headers: dict = {
         'Accept': '*/*',
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) Gecko/20100101 Firefox/111.0'
     }
-    __hh_api_params = {
+    __hh_api_params: dict = {
         'text': 'developer',
         'area': '113',
         'page': 0,
@@ -19,52 +20,57 @@ class VacanciesManager:
                               '104', '157', '107', '112', '113', '148', '114', '116', '121', '124', '125', '126'],
         'order_by': 'publication_time'
     }
-    __db_manager = DatabaseManager()
 
-    def select_data_from_db(self, data_filter_flag, search_text=None):
-        if data_filter_flag:
-            vacancies = self.__db_manager.get_filter_data(search_text)
-        else:
-            vacancies = self.__db_manager.get_data()
+    def __init__(self, db_manager: VacanciesDatabaseManager) -> None:
+        """Инициализирует базовые значения"""
+        self._db_manager = db_manager
 
-        output_vacancies_json = {}
+    def select_data_from_db(self, limit_record: int = None, keywords: str = '%') -> dict:
+        """Возвращает записи из базы данных"""
+        vacancies = self._db_manager.get_data(limit_record, keywords)
+
+        output_vacancies = {}
         counter = 0
         for vacancy in vacancies:
-            output_vacancies_json[counter] = {
-                'company_name': vacancy[1],
-                'city': vacancy[2],
-                'vacancy_name': vacancy[3],
-                'salary_from': vacancy[4],
-                'salary_to': vacancy[5],
-                'salary_currency': vacancy[6],
-                'work_experience': vacancy[7],
-                'employment': vacancy[8],
-                'published_at': vacancy[9],
-                'vacancy_url': vacancy[10],
-                'requirement': vacancy[11],
-                'responsibility': vacancy[12]
+            output_vacancies[counter] = {
+                'company_name': vacancy.company_name,
+                'city': vacancy.city,
+                'vacancy_name': vacancy.vacancy_name,
+                'salary_from': vacancy.salary_from,
+                'salary_to': vacancy.salary_to,
+                'salary_currency': vacancy.salary_currency,
+                'work_experience': vacancy.work_experience,
+                'employment': vacancy.employment,
+                'published_at': vacancy.published_at,
+                'vacancy_url': vacancy.vacancy_url,
+                'requirement': vacancy.requirement,
+                'responsibility': vacancy.responsibility
             }
             counter += 1
-        return output_vacancies_json
+        output_vacancies = {'vacancies': output_vacancies}
+        return output_vacancies
 
-    def parse_vacancies_to_db(self):
-        server_response = requests.get('https://api.hh.ru/vacancies', self.__hh_api_params, headers=self.__request_headers)
+    def parse_vacancies_to_db(self) -> None:
+        """Запрашивает данные с API Head Hunter и добавляет их в базу данных"""
+        server_response = requests.get('https://api.hh.ru/vacancies', self.__hh_api_params,
+                                       headers=self.__request_headers)
         vacancies_info = json.loads(server_response.content.decode())
 
-        lust_date = self.__db_manager.get_lust_record_date()
+        last_date = self._db_manager.get_last_record_date()
         vacancy_data_for_save = []
         for vacancy_info in vacancies_info['items']:
             required_data = self.__select_required_data(vacancy_info)
             vacancy_date = datetime.strptime(required_data['published_at'], '%Y-%m-%d %H:%M:%S')
-            if vacancy_date > lust_date:
+            if vacancy_date > last_date:
                 vacancy_data_for_save.append(required_data)
             else:
                 break
 
         if len(vacancy_data_for_save) > 0:
-            self.__db_manager.append_data_to_db(vacancy_data_for_save)
+            self._db_manager.append_data(vacancy_data_for_save)
 
-    def __select_required_data(self, vacancy_info):
+    def __select_required_data(self, vacancy_info: dict) -> dict:
+        """Выбирает полезные данные из вакансии и формирует из них словарь"""
         company_name = vacancy_info['employer']['name']
         city = vacancy_info['area']['name']
         vacancy_name = vacancy_info['name'].lower()
