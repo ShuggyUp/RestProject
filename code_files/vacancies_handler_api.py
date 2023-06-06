@@ -1,6 +1,6 @@
 import requests
 import json
-from database_manager import DatabaseManager
+from code_files.database_manager import DatabaseManager
 from datetime import datetime
 
 
@@ -51,7 +51,7 @@ class VacanciesManager:
         server_response = requests.get('https://api.hh.ru/vacancies', self.__hh_api_params, headers=self.__request_headers)
         vacancies_info = json.loads(server_response.content.decode())
 
-        lust_date = self.__db_manager.get_lust_record_date()
+        lust_date = self.__db_manager.get_last_record_date()
         vacancy_data_for_save = []
         for vacancy_info in vacancies_info['items']:
             required_data = self.__select_required_data(vacancy_info)
