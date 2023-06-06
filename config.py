@@ -1,10 +1,28 @@
-from dotenv import load_dotenv
-import os
+from pydantic import BaseSettings, Field
 
-load_dotenv()
 
-DB_HOST = os.environ.get('DB_HOST')
-DB_PORT = os.environ.get('DB_PORT')
-DB_NAME = os.environ.get('DB_NAME')
-DB_USER = os.environ.get('DB_USER')
-DB_PASS = os.environ.get('DB_PASS')
+class DatabaseSettings(BaseSettings):
+    """Настройки базы данных"""
+
+    db_host: str = Field('localhost', env='DB_HOST')
+    db_port: str = Field('5432', env='DB_PORT')
+    db_name: str = Field('postgres', env='DB_NAME')
+    db_user: str = Field('postgres', env='DB_USER')
+    db_pass: str = Field(..., env='DB_PASS')
+
+    class Config:
+        env_file = '.env'
+
+
+class UvicornSettings(BaseSettings):
+    """Настройки сервера"""
+
+    host: str = Field('127.0.0.1', env='SERVER_HOST')
+    port: int = Field(8000, env='SERVER_PORT')
+
+    class Config:
+        env_file = '.env'
+
+
+db_settings = DatabaseSettings()
+server_settings = UvicornSettings()

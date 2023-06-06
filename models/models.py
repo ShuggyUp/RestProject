@@ -1,31 +1,14 @@
-from sqlalchemy import MetaData, Table, Column, Integer, Text, DateTime, CHAR
+from sqlalchemy import Column, Integer, Text, DateTime, CHAR
 from sqlalchemy.orm import declarative_base
 
-# metadata = MetaData()
-# vacancies = Table(
-#     'vacancy',
-#     metadata,
-#     Column('id', Integer, primary_key=True),
-#     Column('company_name', Text, nullable=False),
-#     Column('city', Text, nullable=False),
-#     Column('vacancy_name', Text, nullable=False),
-#     Column('salary_from', Integer),
-#     Column('salary_to', Integer),
-#     Column('salary_currency', CHAR(3)),
-#     Column('work_experience', Text, nullable=False),
-#     Column('employment', Text),
-#     Column('published_at', DateTime, nullable=False),
-#     Column('vacancy_url', Text, nullable=False),
-#     Column('requirement', Text),
-#     Column('responsibility', Text)
-# )
 
 Base = declarative_base()
 
 
-class Vacancy(Base):
+class Vacancies(Base):
+    """Модель таблицы Vacancies базы данных"""
 
-    __tablename__ = 'vacancy'
+    __tablename__ = 'vacancies'
 
     id = Column(Integer, primary_key=True)
     company_name = Column(Text, nullable=False)
