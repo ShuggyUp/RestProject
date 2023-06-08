@@ -1,7 +1,10 @@
 import requests
+from requests import Response
 import json
 from code_files.database_manager import VacanciesDatabaseManager
 from datetime import datetime
+from models.models import Base, Vacancies
+from typing import Optional
 
 
 class VacanciesHandlerAPI:
@@ -27,10 +30,11 @@ class VacanciesHandlerAPI:
 
     def select_data_from_db(self, limit_record: int = None, keywords: str = '%') -> dict:
         """Возвращает записи из базы данных"""
-        vacancies = self._db_manager.get_data(limit_record, keywords)
+        vacancies: list[Vacancies] = self._db_manager.get_data(limit_record, keywords)
 
-        output_vacancies = {}
-        counter = 0
+        output_vacancies: dict = {}
+        counter: int = 0
+        vacancy: Vacancies
         for vacancy in vacancies:
             output_vacancies[counter] = {
                 'company_name': vacancy.company_name,
@@ -52,15 +56,16 @@ class VacanciesHandlerAPI:
 
     def parse_vacancies_to_db(self) -> None:
         """Запрашивает данные с API Head Hunter и добавляет их в базу данных"""
-        server_response = requests.get('https://api.hh.ru/vacancies', self.__hh_api_params,
-                                       headers=self.__request_headers)
-        vacancies_info = json.loads(server_response.content.decode())
+        server_response: Response = requests.get('https://api.hh.ru/vacancies', self.__hh_api_params,
+                                                 headers=self.__request_headers)
+        vacancies_info: dict = json.loads(server_response.content.decode())
 
-        last_date = self._db_manager.get_last_record_date()
-        vacancy_data_for_save = []
+        last_date: datetime = self._db_manager.get_last_record_date()
+        vacancy_data_for_save: list = []
+        vacancy_info: dict
         for vacancy_info in vacancies_info['items']:
             required_data = self.__select_required_data(vacancy_info)
-            vacancy_date = datetime.strptime(required_data['published_at'], '%Y-%m-%d %H:%M:%S')
+            vacancy_date: datetime = datetime.strptime(required_data['published_at'], '%Y-%m-%d %H:%M:%S')
             if vacancy_date > last_date:
                 vacancy_data_for_save.append(required_data)
             else:
@@ -70,23 +75,26 @@ class VacanciesHandlerAPI:
             self._db_manager.append_data(vacancy_data_for_save)
 
     def __select_required_data(self, vacancy_info: dict) -> dict:
-        """Выбирает полезные данные из вакансии и формирует из них словарь"""
-        company_name = vacancy_info['employer']['name']
-        city = vacancy_info['area']['name']
-        vacancy_name = vacancy_info['name'].lower()
+        """Выбирает нужные данные из вакансии и формирует из них словарь"""
+        company_name: str = vacancy_info['employer']['name']
+        city: str = vacancy_info['area']['name']
+        vacancy_name: str = vacancy_info['name'].lower()
 
-        salary_from, salary_to, salary_currency = None, None, None
+        salary_from: Optional[int] = None
+        salary_to: Optional[int] = None
+        salary_currency: Optional[str] = None
         if vacancy_info['salary'] is not None:
             salary_from = vacancy_info['salary']['from']
             salary_to = vacancy_info['salary']['to']
             salary_currency = vacancy_info['salary']['currency']
 
-        work_experience = vacancy_info['experience']['name']
-        employment = vacancy_info['employment']['name']
-        published_at = vacancy_info['published_at'].split('+')[0].replace('T', ' ')
-        vacancy_url = vacancy_info['alternate_url']
+        work_experience: str = vacancy_info['experience']['name']
+        employment: str = vacancy_info['employment']['name']
+        published_at: str = vacancy_info['published_at'].split('+')[0].replace('T', ' ')
+        vacancy_url: str = vacancy_info['alternate_url']
 
-        requirement, responsibility = None, None
+        requirement: Optional[str] = None
+        responsibility: Optional[str] = None
         if vacancy_info['snippet'] is not None:
             requirement = vacancy_info['snippet']['requirement']
             if requirement is not None:
@@ -95,7 +103,7 @@ class VacanciesHandlerAPI:
             if responsibility is not None:
                 responsibility = responsibility.replace('<highlighttext>', '').replace('</highlighttext>', '')
 
-        required_data = {
+        required_data: dict = {
             'company_name': company_name,
             'city': city,
             'vacancy_name': vacancy_name,

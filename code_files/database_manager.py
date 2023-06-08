@@ -4,6 +4,7 @@ from datetime import datetime
 from abc import ABC, abstractmethod
 from sqlalchemy import Engine
 from models.models import Base
+from typing import Optional
 
 
 class DatabaseManager(ABC):
@@ -26,11 +27,11 @@ class DatabaseManager(ABC):
 class VacanciesDatabaseManager(DatabaseManager):
     """Интерфейс взаимодействия с таблицей Vacancies"""
 
-    def get_data(self, limit_record: int, keywords: str):
+    def get_data(self, limit_record: int, keywords: str) -> list[Base]:
         """Возвращает записи из базы данных"""
         with Session(bind=self._engine) as session:
-            valid_data = session.query(self._model).filter(self._model.vacancy_name.like(keywords)).order_by(
-                self._model.published_at.desc()).limit(limit_record).all()
+            valid_data: list[Base] = session.query(self._model).filter(self._model.vacancy_name.like(
+                keywords)).order_by(self._model.published_at.desc()).limit(limit_record).all()
 
         return valid_data
 
@@ -43,10 +44,13 @@ class VacanciesDatabaseManager(DatabaseManager):
     def get_last_record_date(self) -> datetime:
         """Возвращает дату публикации последней вакансии"""
         with Session(bind=self._engine) as session:
-            last_record_date = session.query(self._model.published_at).order_by(self._model.published_at.desc()).first()
-            if last_record_date is None:
-                last_record_date = datetime.strptime('2000-01-01 01:01:01', '%Y-%m-%d %H:%M:%S')
-            else:
-                last_record_date = last_record_date[0]
+            last_record_date: Optional[tuple] = session.query(self._model.published_at).order_by(
+                self._model.published_at.desc()).first()
 
-        return last_record_date
+            last_record_date_datetime_form: datetime
+            if last_record_date is None:
+                last_record_date_datetime_form = datetime.strptime('2000-01-01 01:01:01', '%Y-%m-%d %H:%M:%S')
+            else:
+                last_record_date_datetime_form = last_record_date[0]
+
+        return last_record_date_datetime_form
