@@ -3,7 +3,7 @@ from requests import Response
 import json
 from code_files.database_manager import VacanciesDatabaseManager
 from datetime import datetime
-from models.models import Base, Vacancies
+from database_models.models import Vacancies
 from typing import Optional
 
 
@@ -33,10 +33,10 @@ class VacanciesHandlerAPI:
         vacancies: list[Vacancies] = self._db_manager.get_data(limit_record, keywords)
 
         output_vacancies: dict = {}
-        counter: int = 0
+        vacancy_number: int = 0
         vacancy: Vacancies
         for vacancy in vacancies:
-            output_vacancies[counter] = {
+            output_vacancies[vacancy_number] = {
                 'company_name': vacancy.company_name,
                 'city': vacancy.city,
                 'vacancy_name': vacancy.vacancy_name,
@@ -50,11 +50,11 @@ class VacanciesHandlerAPI:
                 'requirement': vacancy.requirement,
                 'responsibility': vacancy.responsibility
             }
-            counter += 1
+            vacancy_number += 1
         output_vacancies = {'vacancies': output_vacancies}
         return output_vacancies
 
-    def parse_vacancies_to_db(self) -> None:
+    def load_vacancies_to_db(self) -> None:
         """Запрашивает данные с API Head Hunter и добавляет их в базу данных"""
         server_response: Response = requests.get('https://api.hh.ru/vacancies', self.__hh_api_params,
                                                  headers=self.__request_headers)

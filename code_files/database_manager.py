@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 from datetime import datetime
 from abc import ABC, abstractmethod
 from sqlalchemy import Engine
-from models.models import Base
+from database_models.models import Base
 from typing import Optional
 
 
